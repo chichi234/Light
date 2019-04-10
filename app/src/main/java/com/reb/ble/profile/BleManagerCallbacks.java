@@ -48,5 +48,7 @@ public interface BleManagerCallbacks {
 	void onRecive(byte[] data);
 
 	void onReadRssi(int rssi);
+
+	void onError(String msg, int code);
 	
 }

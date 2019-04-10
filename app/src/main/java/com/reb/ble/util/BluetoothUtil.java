@@ -24,7 +24,7 @@ public class BluetoothUtil {
         return adapter;
     }
 
-    public void reopenBt(Context context) {
+    public static void reopenBt(Context context) {
         final BluetoothAdapter adapter = getBluetoothAdapter(context);
         if (adapter.isEnabled()) {
             adapter.disable();

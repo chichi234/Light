@@ -50,7 +50,10 @@ public class API19Scanner extends ScannerBase {
 
     @Override
     public void stopScan() {
-        BluetoothUtil.getBluetoothAdapter(mContext).stopLeScan(mScanCallback);
+        super.stopScan();
+        if (BluetoothUtil.getBluetoothAdapter(mContext).isEnabled()) {
+            BluetoothUtil.getBluetoothAdapter(mContext).stopLeScan(mScanCallback);
+        }
         mScanLeCallback.onScanStop();
         this.mIsScanning = false;
     }

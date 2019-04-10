@@ -3,6 +3,8 @@ package com.reb.ble.scanner;
 import android.content.Context;
 import android.os.Handler;
 
+import com.reb.ble.util.BluetoothUtil;
+
 /**
  * File description
  *
@@ -33,12 +35,7 @@ public abstract class ScannerBase {
 
     void stopScanDelay(long timeoutMills) {
         if (timeoutMills > 0) {
-            mHandler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    stopScan();
-                }
-            }, timeoutMills);
+            mHandler.postDelayed(mStopRunnable, timeoutMills);
         }
     }
 
@@ -50,5 +47,14 @@ public abstract class ScannerBase {
 
     public abstract void startScan();
 
-    public abstract void stopScan();
+    public void stopScan() {
+        mHandler.removeCallbacks(mStopRunnable);
+    }
+
+    private Runnable mStopRunnable = new Runnable() {
+        @Override
+        public void run() {
+            stopScan();
+        }
+    };
 }

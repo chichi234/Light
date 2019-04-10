@@ -8,7 +8,6 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ListView;
 
-import com.reb.ble.profile.BleCore;
 import com.reb.light.R;
 
 /**
@@ -30,6 +29,7 @@ public class DeviceListFragment extends BaseScannerFragment {
         super.onCreateView(inflater, container, savedInstanceState);
         mRootView = inflater.inflate(R.layout.frag_devices, null);
         ListView deviceList = mRootView.findViewById(R.id.devices_frag);
+//        deviceList.setMaxLineCount(3);
         mAdapter = new DeviceAdapter(getContext());
         deviceList.setAdapter(mAdapter);
         deviceList.setOnItemClickListener(mOnItemClickListener);
@@ -54,6 +54,10 @@ public class DeviceListFragment extends BaseScannerFragment {
     private AdapterView.OnItemClickListener mOnItemClickListener = new AdapterView.OnItemClickListener() {
         @Override
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            stopScan();
+            if (DeviceListFragment.this.mBleScanStateListener != null) {
+                DeviceListFragment.this.mBleScanStateListener.onDeviceSelect((ExtendedBluetoothDevice) parent.getItemAtPosition(position));
+            }
 //            BleCore.getInstances().connect(getContext().getApplicationContext(), );
         }
     };

@@ -80,18 +80,23 @@ public class DeviceAdapter extends BaseAdapter {
         } else {
             vh = (ViewHolder) convertView.getTag();
         }
-        final String name;
         final ExtendedBluetoothDevice device = devices.get(i);
-        if (TextUtils.isEmpty(device.name)) {
-            name = mContext.getString(R.string.unknown);
+        String name = device.name;
+        if ("Meyra Light".equals(name) || "DSD Relay".equals(name)) {
+            name = "Meyra Light";
         } else {
-            name = device.name;
+            name = mContext.getString(R.string.unknown);
         }
+//        if (TextUtils.isEmpty(device.name)) {
+//            name = mContext.getString(R.string.unknown);
+//        } else if ("DSD Relay".equals(name)) {
+//            name = "Meyra Light";
+//        }
         vh.mNameView.setText(name);
         return convertView;
     }
 
-    private class ViewHolder{
+    private class ViewHolder {
         TextView mNameView;
     }
 }

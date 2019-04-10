@@ -24,6 +24,8 @@ import com.reb.ble.scanner.ScannerBase;
 import com.reb.ble.util.BluetoothUtil;
 import com.reb.ble.util.DebugLog;
 
+import java.util.Arrays;
+
 /**
  * Created by Administrator on 2018/1/7 0007.
  */
@@ -34,7 +36,7 @@ public abstract class BaseScannerFragment extends Fragment implements ScanLeCall
     protected View mRootView;
     private boolean mInitScaned = false;
     private ScannerBase mScanner;
-    private BleScanStateListener mBleScanStateListener;
+    protected BleScanListener mBleScanStateListener;
 
     @Nullable
     @Override
@@ -63,7 +65,7 @@ public abstract class BaseScannerFragment extends Fragment implements ScanLeCall
         } else {
             mScanner = new API21Scanner(getContext(), this);
         }
-        mScanner.setTimeout(-1);
+        mScanner.setTimeout(8000);
     }
 
     private void initBt() {
@@ -88,6 +90,7 @@ public abstract class BaseScannerFragment extends Fragment implements ScanLeCall
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        DebugLog.i(Arrays.toString(grantResults) + "=====mInitScaned:" + mInitScaned);
         if (requestCode == SCAN_PERMISSION_REQUEST_CODE) {
             for (int result: grantResults) {
                 if (result == PackageManager.PERMISSION_DENIED) {
@@ -105,7 +108,7 @@ public abstract class BaseScannerFragment extends Fragment implements ScanLeCall
     public void startScan(){
         if (!BluetoothUtil.getBluetoothAdapter(getContext()).isEnabled()) {
             BluetoothUtil.getBluetoothAdapter(getContext()).enable();
-        } else if (BluetoothUtil.requirScanPermission(getActivity(),  SCAN_PERMISSION_REQUEST_CODE)) {
+        } else if (BluetoothUtil.requirScanPermission(getActivity(), this, SCAN_PERMISSION_REQUEST_CODE)) {
             mInitScaned = true;
             mScanner.startScan();
         }
@@ -137,13 +140,14 @@ public abstract class BaseScannerFragment extends Fragment implements ScanLeCall
         }
     }
 
-    public void setBleScanStateListener (BleScanStateListener scanStateListener) {
+    public void setBleScanStateListener (BleScanListener scanStateListener) {
         this.mBleScanStateListener = scanStateListener;
     }
 
 
-    public interface BleScanStateListener {
+    public interface BleScanListener {
         void onScanStart();
         void onScanStop();
+        void onDeviceSelect(ExtendedBluetoothDevice device);
     }
 }

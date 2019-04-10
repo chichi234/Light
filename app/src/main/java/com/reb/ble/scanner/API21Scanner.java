@@ -36,7 +36,6 @@ public class API21Scanner extends ScannerBase{
 
     public API21Scanner(Context context, ScanLeCallback scanLeCallback) {
         super(context, scanLeCallback);
-        this.mScanner = BluetoothUtil.getBluetoothAdapter(mContext).getBluetoothLeScanner();
     }
 
     @Override
@@ -53,6 +52,13 @@ public class API21Scanner extends ScannerBase{
 
     @Override
     public void startScan() {
+        if (this.mScanner == null) {
+            this.mScanner = BluetoothUtil.getBluetoothAdapter(mContext).getBluetoothLeScanner();
+            if (mScanner == null) {
+                DebugLog.e("can't get scanner");
+                return;
+            }
+        }
         this.mDevices.clear();
 //        this.mScanner.startScan(mScanFilters, new ScanSettings.Builder().setCallbackType(ScanSettings.CALLBACK_TYPE_FIRST_MATCH).build(), mScanCallback);
         this.mScanner.startScan(mScanCallback);
@@ -63,7 +69,10 @@ public class API21Scanner extends ScannerBase{
 
     @Override
     public void stopScan() {
-        this.mScanner.stopScan(mScanCallback);
+        super.stopScan();
+        if (BluetoothUtil.getBluetoothAdapter(mContext).isEnabled()) {
+            this.mScanner.stopScan(mScanCallback);
+        }
         this.mScanLeCallback.onScanStop();
         this.mIsScanning = false;
     }

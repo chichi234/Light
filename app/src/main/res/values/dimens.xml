@@ -9,5 +9,5 @@
     <dimen name="relay_margin">40dp</dimen>
     <dimen name="relay_margin1">60dp</dimen>
     <dimen name="relay_margin_ver">10dp</dimen>
-    <dimen name="text_size">28sp</dimen>
+    <dimen name="text_size">32sp</dimen>
 </resources>

@@ -1,55 +1,177 @@
 package com.reb.light.ui;
 
+import android.annotation.SuppressLint;
 import android.graphics.Color;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.view.View;
-import android.widget.Button;
+import android.os.Handler;
+import android.os.Message;
+import android.support.v4.app.FragmentManager;
+import android.widget.Toast;
 
-import com.reb.ble.ui.BaseScannerFragment;
+import com.reb.ble.profile.BleCore;
+import com.reb.ble.profile.BleManagerCallbacks;
+import com.reb.ble.ui.ExtendedBluetoothDevice;
+import com.reb.ble.util.BluetoothUtil;
 import com.reb.ble.util.DebugLog;
 import com.reb.light.R;
+import com.reb.light.ui.frag.ConnectingFragment;
+import com.reb.light.ui.frag.LightFragment;
+import com.reb.light.ui.frag.ScannerFragment;
 import com.reb.light.util.UIUtil;
 
-public class MainActivity extends AppCompatActivity implements BaseScannerFragment.BleScanStateListener {
+import java.util.Arrays;
 
-    private Button mScanBtn;
-    private BaseScannerFragment mScannerFragment;
+public class MainActivity extends BaseFragmentActivity implements ScannerFragment.OnDeviceSelectedListener, BleManagerCallbacks {
+
+    private ScannerFragment mScannerFragment;
+    private ConnectingFragment mConnectingFragment;
+    private LightFragment mLightFragment;
+
+    private static final int MSG_CONNECT_SUCCESS = 0x10001;
+    private static final int MSG_DISCONNECT = 0x10002;
+    private static final int MSG_ERROR = 0x10003;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         UIUtil.setStatusBarColor(Color.WHITE, this);
-        mScanBtn = findViewById(R.id.scan_button);
-        mScannerFragment = (BaseScannerFragment) getSupportFragmentManager().findFragmentById(R.id.devices_frag);
-        mScannerFragment.setBleScanStateListener(this);
-        mScanBtn.post(new Runnable() {
-            @Override
-            public void run() {
-                if (MainActivity.this.mScannerFragment.isScanning())
-                    mScanBtn.setText(R.string.scanning);
-                else
-                    mScanBtn.setText(R.string.scan);
-            }
-        });
+        BleCore.getInstances().setGattCallbacks(this);
+        initFragment(savedInstanceState);
+        DebugLog.i(getResources().getDisplayMetrics().density + ":dpi");
     }
 
-    public void scan(View view) {
-        if (this.mScannerFragment.isScanning()) {
-            this.mScannerFragment.stopScan();
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mHandler.removeCallbacksAndMessages(null);
+        mHandler = null;
+        BleCore.getInstances().disconnect();
+    }
+
+    private void initFragment(Bundle savedInstanceState) {
+        String currentFragTag = null;
+        if (savedInstanceState != null) {
+            currentFragTag = savedInstanceState.getString("mCurrentFragTag");
+            FragmentManager fm = getSupportFragmentManager();
+            mScannerFragment = (ScannerFragment) fm.findFragmentByTag(ScannerFragment.class.getSimpleName());
+            mConnectingFragment = (ConnectingFragment) fm.findFragmentByTag(ConnectingFragment.class.getSimpleName());
+            mLightFragment = (LightFragment) fm.findFragmentByTag(LightFragment.class.getSimpleName());
+        }
+        if (mScannerFragment == null)
+            mScannerFragment = new ScannerFragment();
+        mScannerFragment.setOnDeviceSelectedListener(this);
+        if (mConnectingFragment == null)
+            mConnectingFragment = new ConnectingFragment();
+        if (mLightFragment == null)
+            mLightFragment = new LightFragment();
+        if (ScannerFragment.class.getSimpleName().equals(currentFragTag)) {
+            changeFragment(mScannerFragment);
+        } else if (ConnectingFragment.class.getSimpleName().equals(currentFragTag)) {
+            changeFragment(mConnectingFragment);
+        } else if (LightFragment.class.getSimpleName().equals(currentFragTag)) {
+            changeFragment(mLightFragment);
         } else {
-            this.mScannerFragment.startScan();
+            changeFragment(mScannerFragment);
         }
     }
 
     @Override
-    public void onScanStart() {
-        mScanBtn.setText(R.string.scanning);
+    public void onDeviceSelect(ExtendedBluetoothDevice device) {
+        if (BleCore.getInstances().connect(getApplicationContext(), device.device)) {
+            // 尝试连接成功，转到正在连接界面
+            changeFragment(mConnectingFragment);
+        }
     }
 
     @Override
-    public void onScanStop() {
-        mScanBtn.setText(R.string.scan);
+    public void onDeviceConnected() {
+
     }
+
+    @Override
+    public void onDeviceDisconnected() {
+        if (mHandler != null) {
+            mHandler.sendEmptyMessage(MSG_DISCONNECT);
+        }
+    }
+
+    @Override
+    public void onServicesDiscovered() {
+
+    }
+
+    @Override
+    public void onNotifyEnable() {
+        if (mHandler != null) {
+            mHandler.sendEmptyMessage(MSG_CONNECT_SUCCESS);
+        }
+    }
+
+    @Override
+    public void onLinklossOccur(String macAddress) {
+        if (mHandler != null) {
+            mHandler.sendEmptyMessage(MSG_DISCONNECT);
+        }
+    }
+
+    @Override
+    public void onDeviceNotSupported() {
+
+    }
+
+    @Override
+    public void onWriteSuccess(byte[] data, boolean success) {
+        DebugLog.i(Arrays.toString(data) + "success:" + success);
+        if (mCurrentFrag == mLightFragment) {
+            mLightFragment.onWriteSuccess(data, success);
+        }
+    }
+
+    @Override
+    public void onRecive(byte[] data) {
+        DebugLog.i(Arrays.toString(data));
+    }
+
+    @Override
+    public void onReadRssi(int rssi) {
+
+    }
+
+    @Override
+    public void onError(String msg, int code) {
+        DebugLog.e("code:" + code + ",msg:" + msg);
+        if (mHandler != null) {
+            mHandler.sendMessage(mHandler.obtainMessage(MSG_ERROR, code, 0, msg));
+        }
+    }
+
+    @SuppressLint("HandlerLeak")
+    private Handler mHandler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                case MSG_CONNECT_SUCCESS:
+                    changeFragment(mLightFragment);
+                    break;
+                case MSG_DISCONNECT:
+                    if (mCurrentFrag == mLightFragment) {
+                        mLightFragment.toggleLight(false);
+                        Toast.makeText(MainActivity.this, R.string.disconnect, Toast.LENGTH_SHORT).show();
+                    } else if (mCurrentFrag == mConnectingFragment) {
+                        Toast.makeText(MainActivity.this, R.string.alert_connect_failed, Toast.LENGTH_SHORT).show();
+                        changeFragment(mScannerFragment);
+                    }
+                    break;
+                case MSG_ERROR:
+                    Toast.makeText(MainActivity.this, (String) msg.obj, Toast.LENGTH_SHORT).show();
+//                    if (msg.arg1 == 133) {
+//                        BleCore.getInstances().closeBluetoothGatt();
+//                        BluetoothUtil.reopenBt(MainActivity.this);
+//                    }
+                    changeFragment(mScannerFragment);
+                    break;
+            }
+        }
+    };
 }

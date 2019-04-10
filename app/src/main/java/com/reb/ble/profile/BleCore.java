@@ -77,12 +77,12 @@ public class BleCore {
                 if (mIsConnected) {
                     mCallbacks.onDeviceConnected();
                 }
-                return true;
+                return false;
             } else {
                 Log.d(TAG, "不同设备，先断开");
                 disConnect(false);
                 mBluetoothGatt = null;
-                return true;
+//                return true;
             }
         }
         address = device.getAddress();
@@ -275,7 +275,11 @@ public class BleCore {
     }
 
     protected void onError(String errorWriteDescriptor, int status) {
+        mCallbacks.onError(errorWriteDescriptor, status);
         disConnect(false);
+        if (status == 8 || status == 22) {
+            closeBluetoothGatt();
+        }
     }
 
     public boolean readRssi() {

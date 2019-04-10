@@ -1,9 +1,12 @@
 <resources>
-    <string name="app_name">Light</string>
+    <string name="app_name">MEYLIGHT</string>
     <string name="unknown"><![CDATA[<UNKNOWN>]]></string>
     <string name="meyra_light">Meyra Light</string>
     <string name="welcome_to">Welcome to</string>
     <string name="please_select_your_device">Please select your device</string>
     <string name="scan">scan</string>
     <string name="scanning">scanning</string>
+    <string name="connecting">Connecting</string>
+    <string name="alert_connect_failed">Connect Failed!</string>
+    <string name="disconnect">Disconnect</string>
 </resources>
